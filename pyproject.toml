@@ -1,0 +1,17 @@
+[project]
+name = "go-opensearch-rag-mcp-server"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "qTemiO",email = "71713499+qTemiO@users.noreply.github.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastmcp (>=2.13.0.2,<3.0.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
