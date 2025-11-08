@@ -3,6 +3,8 @@ from datetime import datetime
 from loguru import logger
 from fastmcp import FastMCP
 
+from settings import settings
+
 mcp = FastMCP(name="Gorag MCP Server")
 
 
@@ -34,4 +36,4 @@ def extend_search(index: str, query: str) -> dict:
 
 
 if __name__ == "__main__":
-    mcp.run("streamable-http",  host="0.0.0.0", port=15000)
+    mcp.run("streamable-http",  host=settings.HOST, port=settings.PORT)
