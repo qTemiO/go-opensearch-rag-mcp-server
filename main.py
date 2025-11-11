@@ -1,14 +1,17 @@
+import asyncio
 from datetime import datetime
 
 from loguru import logger
 from fastmcp import FastMCP
 
+from servers import search_mcp
 from settings import settings
 
-mcp = FastMCP(name="Gorag MCP Server")
+# Define main server
+main_mcp = FastMCP(name="MainApp")
 
 
-@mcp.tool
+@main_mcp.tool
 def current_time() -> datetime:
     """
     Current time in user location 
@@ -17,23 +20,9 @@ def current_time() -> datetime:
     return datetime.now()
 
 
-@mcp.tool
-def enchant_prompt(prompt: str) -> str:
-    """
-    Enchants prompt for better generation
-    """
-    logger.success("Enchant prompt called")
-    return f"New prompt: {prompt}!"
-
-
-@mcp.tool
-def extend_search(index: str, query: str) -> dict:
-    """
-    Extends search for new documents by given index and query
-    """
-    logger.success("Extend search called")
-    return {"index": index, "query": query, "documents": ["doc1 test", "doc2 test"]}
-
+async def setup():
+    await main_mcp.import_server(search_mcp, prefix="search")
 
 if __name__ == "__main__":
-    mcp.run("streamable-http",  host=settings.HOST, port=settings.PORT)
+    asyncio.run(setup())
+    main_mcp.run("streamable-http",  host=settings.HOST, port=settings.PORT)

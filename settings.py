@@ -12,5 +12,8 @@ class Settings(BaseSettings):
     PORT: int = 13005
     TEMP_DIRECTORY: Path = Path(__file__).parent.joinpath("tmp")
 
+    # Gorag Service
+    RAG_SERVICE_URL: str
+
 
 settings = Settings()
