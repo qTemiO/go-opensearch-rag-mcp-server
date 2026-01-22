@@ -22,5 +22,10 @@ class Settings(BaseSettings):
     TRANSLATOR_SERVICE_DETECT_LANGUAGE: str
     TRANSLATOR_SERVICE_TRANSLATE_TEXT: str
 
+    # Creds for tests
+    TEST_PROVIDER_BASE_URL: str
+    TEST_API_KEY: str
+    TEST_MODEL_NAME: str
+    TEST_MCP_URL: str
 
 settings = Settings()

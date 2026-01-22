@@ -6,18 +6,18 @@ from loguru import logger
 from settings import settings
 from servers.translator.schemas.requests import TranslateTextRequest
 
-translator_mcp = FastMCP(name="TransaltorServer")
+translator_mcp = FastMCP(name="TranslatorServer")
 
 
-@translator_mcp.tool(name="Translator.Get.Languages")
+@translator_mcp.tool(name="Translator.Translator.Get.AvailableLanguages")
 async def get_available_languages() -> list[dict]:
     """
-    This tool is getting list of available languages in translator service with a list of language codes with available combinations.
+    Этот инструмент позволит посмотреть доступные для перевода языки и их комбинации.
     
-    Use this tool when you need to know:
-    - which source languages are available
-    - which target languages are supported
-    - whether a translation direction is valid
+    Используй этот инструмент если:
+    - Какие исходные языки доступны
+    - Какие целевые языки перевода доступны
+    - Является ли комбинация языков доступной
     """
     try:
         logger.success("Get available languages called!")
@@ -28,12 +28,13 @@ async def get_available_languages() -> list[dict]:
             return languages.get("languages", [])
     except Exception as error:
         logger.error(f"Error occured with available languages tool, {error}")
+        return []
         
 @translator_mcp.tool(name="Translator.Translate")
 async def translate_text(args: TranslateTextRequest) -> str:
     """
-    This tool helps to translate text from translator service.
-    Always ensure the language pair is supported before calling this tool.
+    Этот инструмент переводит текст с исходно языка на целевой язык.
+    Перед применением убедись, что языки и их комбинация доступны для перевода
     """
     try:
         logger.success("Transalte tool called!")
@@ -42,8 +43,9 @@ async def translate_text(args: TranslateTextRequest) -> str:
             url = settings.TRANSLATOR_SERVICE_BASE_URL + settings.TRANSLATOR_SERVICE_TRANSLATE_TEXT
             payload = args.model_dump()
             response = await session.post(url, json=payload)
-            languages = await response.json()
-            logger.debug(languages)
-            return languages.get("text", "")
+            result = await response.json()
+            logger.debug(result["text"])
+            return result["text"]
     except Exception as error:
         logger.error(f"Error occured with available languages tool, {error}")
+        return ""
