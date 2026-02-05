@@ -12,8 +12,13 @@ class Settings(BaseSettings):
     PORT: int = 13005
     TEMP_DIRECTORY: Path = Path(__file__).parent.joinpath("tmp")
 
-    # Gorag Service
-    RAG_SERVICE_URL: str
+    # Go-opensearch-database
+    GO_OPENSEARCH_DATABASE_URL: str
+    GO_OPENSEARCH_DATABASE_BOOKS_LIST_ENDPOINT: str = "/api/v1/books/list"
+
+    @property
+    def go_opensearch_database_books_list_endpoint(self) -> str:
+        return f"{self.GO_OPENSEARCH_DATABASE_URL}{self.GO_OPENSEARCH_DATABASE_BOOKS_LIST_ENDPOINT}"
 
 
-settings = Settings()
+settings = Settings()  # type: ignore
