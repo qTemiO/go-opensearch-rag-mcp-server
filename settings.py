@@ -15,10 +15,21 @@ class Settings(BaseSettings):
     # Go-opensearch-database
     GO_OPENSEARCH_DATABASE_URL: str
     GO_OPENSEARCH_DATABASE_BOOKS_LIST_ENDPOINT: str = "/api/v1/books/list"
+    GO_OPENSEARCH_DATABASE_SEARCH_DOCUMENTS_ENDPOINT: str = "/api/v1/search/documents"
+
+    # Creds for tests
+    TEST_PROVIDER_BASE_URL: str
+    TEST_API_KEY: str
+    TEST_MODEL_NAME: str
+    TEST_MCP_URL: str
 
     @property
     def go_opensearch_database_books_list_endpoint(self) -> str:
         return f"{self.GO_OPENSEARCH_DATABASE_URL}{self.GO_OPENSEARCH_DATABASE_BOOKS_LIST_ENDPOINT}"
+
+    @property
+    def go_opensearch_database_search_documents_endpoint(self) -> str:
+        return f"{self.GO_OPENSEARCH_DATABASE_URL}{self.GO_OPENSEARCH_DATABASE_SEARCH_DOCUMENTS_ENDPOINT}"
 
 
 settings = Settings()  # type: ignore
