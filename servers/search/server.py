@@ -11,7 +11,7 @@ search_mcp = FastMCP(name="SearchServer")
 
 
 @search_mcp.tool
-async def get_availiable_books(index: str) -> list[str] | None:
+async def availiable_books(index: str) -> list[str] | None:
     """
     This tool help to define which books are loaded in opensearch index 
 
@@ -34,7 +34,7 @@ async def get_availiable_books(index: str) -> list[str] | None:
 
 
 @search_mcp.tool
-async def search_documents(item: schemas.SearchDocumentsPayload) -> dict | None:
+async def documents(item: schemas.SearchDocumentsPayload) -> dict | None:
     """
     This tool help to find documents in opensearch index with search methodics
 
@@ -68,7 +68,7 @@ async def search_documents(item: schemas.SearchDocumentsPayload) -> dict | None:
 
 
 @search_mcp.tool
-async def search_filter_documents(item: schemas.SearchFilterDocumentsPayload) -> dict | None:
+async def filter_documents(item: schemas.SearchFilterDocumentsPayload) -> dict | None:
     """
     This tool help to find documents in opensearch index with advanced search methodics and filters
 
