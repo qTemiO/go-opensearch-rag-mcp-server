@@ -11,13 +11,11 @@ search_mcp = FastMCP(name="SearchServer")
 
 
 @search_mcp.tool
-async def availiable_books(index: str) -> list[str] | None:
+async def books(index: str) -> list[str] | None:
     """
     This tool help to define which books are loaded in opensearch index 
 
     * **index** - your opensearch index
-
-    response - list of books in string 
     """
     logger.success(f"Search Books tool used, index: {index}")
 
@@ -36,17 +34,11 @@ async def availiable_books(index: str) -> list[str] | None:
 @search_mcp.tool
 async def documents(item: schemas.SearchDocumentsPayload) -> dict | None:
     """
-    This tool help to find documents in opensearch index with search methodics
+    This tool help to find chucks in opensearch index by text query
 
     * **index** - your opensearch index
     * **text** - query to search documents
     * **top_k** - number of document to receive 
-
-    response:
-    * **documents** - texts of documents
-    * **scores** - relevant scores of documents
-    * **sources** - names of sources books
-
     """
     logger.success(
         f"Search documents tool used, index: {item.index} {item.text}")
@@ -68,7 +60,7 @@ async def documents(item: schemas.SearchDocumentsPayload) -> dict | None:
 
 
 @search_mcp.tool
-async def filter_documents(item: schemas.SearchFilterDocumentsPayload) -> dict | None:
+async def documents_with_filter(item: schemas.SearchFilterDocumentsPayload) -> dict | None:
     """
     This tool help to find documents in opensearch index with advanced search methodics and filters
 
@@ -77,12 +69,6 @@ async def filter_documents(item: schemas.SearchFilterDocumentsPayload) -> dict |
     * **top_k** - number of document to receive 
     * **allowed_books** - list of full name of allowed books (you may find all books in awailiable_books tool)
     * **forbidden_books** - list of full name of forbidden books or ban-books (you may find all books in awailiable_books tool)
-
-    response:
-    * **documents** - texts of documents
-    * **scores** - relevant scores of documents
-    * **sources** - names of sources books
-
     """
     logger.success(
         f"Search filter documents tool used, index: {item.index} {item.text}")

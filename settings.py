@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     GO_OPENSEARCH_DATABASE_BOOKS_DESCRIPTION_ENDPOINT: str = "/api/v1/books/description"
     GO_OPENSEARCH_DATABASE_SEARCH_DOCUMENTS_ENDPOINT: str = "/api/v1/search/documents"
     GO_OPENSEARCH_DATABASE_SEARCH_FILTER_DOCUMENTS_ENDPOINT: str = "/api/v1/search/filter_documents"
-    "/api/v1/books/description"
+    GO_OPENSEARCH_DATABASE_INDEXES_ENDPOINT: str = "/api/v1/index-manager/indexes"
 
     # Creds for tests
     TEST_PROVIDER_BASE_URL: str
@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     @property
     def go_opensearch_database_books_description_endpoint(self) -> str:
         return f"{self.GO_OPENSEARCH_DATABASE_URL}{self.GO_OPENSEARCH_DATABASE_BOOKS_DESCRIPTION_ENDPOINT}"
+
+    @property
+    def go_opensearch_database_indexes_endpoint(self) -> str:
+        return f"{self.GO_OPENSEARCH_DATABASE_URL}{self.GO_OPENSEARCH_DATABASE_INDEXES_ENDPOINT}"
 
 
 settings = Settings()  # type: ignore
