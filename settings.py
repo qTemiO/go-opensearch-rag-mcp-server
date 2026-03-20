@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,10 +23,10 @@ class Settings(BaseSettings):
     GO_OPENSEARCH_DATABASE_INDEXES_ENDPOINT: str = "/api/v1/index-manager/indexes"
 
     # Creds for tests
-    TEST_PROVIDER_BASE_URL: str
-    TEST_API_KEY: str
-    TEST_MODEL_NAME: str
-    TEST_MCP_URL: str
+    TEST_PROVIDER_BASE_URL: Optional[str] = None
+    TEST_API_KEY: Optional[str] = None
+    TEST_MODEL_NAME: Optional[str] = None
+    TEST_MCP_URL: Optional[str] = None
 
     @property
     def go_opensearch_database_books_list_endpoint(self) -> str:
