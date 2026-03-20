@@ -17,3 +17,8 @@ class DescriptionWrite(BaseModel):
     index: str
     book_name: str
     description: str
+
+
+class DescriptionDelete(BaseModel):
+    index: str
+    book_name: str

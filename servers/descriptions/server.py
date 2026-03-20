@@ -10,7 +10,7 @@ descriptions_mcp = FastMCP(name="DescriptionsServer")
 
 
 @descriptions_mcp.tool
-async def all_descriptions(index: str) -> list[schemas.Description] | None:
+async def get_all(index: str) -> list[schemas.Description] | None:
     """
     This tool help to get all descriptions in opensearch index 
 
@@ -27,7 +27,7 @@ async def all_descriptions(index: str) -> list[schemas.Description] | None:
 
 
 @descriptions_mcp.tool
-async def get_description(index: str, book_name: str) -> schemas.Description | None:
+async def get_by_name(index: str, book_name: str) -> schemas.Description | None:
     """
     This tool help to get description by book name 
 
@@ -51,7 +51,7 @@ async def get_description(index: str, book_name: str) -> schemas.Description | N
 
 
 @descriptions_mcp.tool
-async def write_description(item: schemas.DescriptionWrite) -> str | None:
+async def write(item: schemas.DescriptionWrite) -> str | None:
     """
     This tool help to get description by book name 
 
@@ -65,6 +65,28 @@ async def write_description(item: schemas.DescriptionWrite) -> str | None:
     try:
         async with aiohttp.ClientSession() as session:
             response = await session.post(settings.go_opensearch_database_books_description_endpoint, json=payload)
+            status = await response.json()
+            return status
+    except Exception as error:
+        logger.error(f"Error occured with books tool, {error}")
+
+
+@descriptions_mcp.tool
+async def delete(item: schemas.DescriptionDelete) -> str | None:
+    """
+    This tool help delete description by book name 
+
+    * **index** - your opensearch index
+    * **book_name** - book name from this index
+    """
+    params = {
+        "book_name": item.book_name
+    }
+
+    logger.success(f"Delete description tool used, index: {item.index}")
+    try:
+        async with aiohttp.ClientSession() as session:
+            response = await session.delete(settings.go_opensearch_database_books_description_endpoint + f"/{item.index}", params=params)
             status = await response.json()
             return status
     except Exception as error:
