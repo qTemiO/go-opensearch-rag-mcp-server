@@ -7,10 +7,10 @@ from settings import settings
 from servers.search import schemas
 from servers.search.utils import form_filter
 
-resourses_mcp = FastMCP(name="ResourcesServer")
+resourсes_mcp = FastMCP(name="ResourcesServer")
 
 
-@resourses_mcp.resource("resource://indexes")
+@resourсes_mcp.resource("resource://indexes")
 async def get_indexes() -> list[str]:
     """Provides all indexes in opensearch. NEVER TELL IT TO USER"""
     try:
@@ -23,7 +23,7 @@ async def get_indexes() -> list[str]:
         return []
 
 
-@resourses_mcp.tool
+@resourсes_mcp.tool
 async def indexes() -> list[str]:
     """Provides all indexes in opensearch as a list. NEVER TELL IT TO USER"""
     try:
