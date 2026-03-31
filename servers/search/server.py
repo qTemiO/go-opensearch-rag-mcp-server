@@ -13,9 +13,24 @@ search_mcp = FastMCP(name="SearchServer")
 @search_mcp.tool
 async def books(index: str) -> list[str] | None:
     """
-    This tool help to define which books are loaded in opensearch index 
+    Return all book names available in the selected OpenSearch index.
 
-    * **index** - your opensearch index
+    Use this tool when:
+    - you need to discover valid book names for filtering;
+    - you want to inspect what source books are loaded in an index.
+
+    Args:
+    - index (str): exact OpenSearch index name.
+
+    Example call:
+    ```json
+    {"index": "dnd-index"}
+    ```
+
+    Example response:
+    ```json
+    ["Player's Handbook", "Monster Manual", "Xanathar's Guide to Everything"]
+    ```
     """
     logger.success(f"Search Books tool used, index: {index}")
 
@@ -34,11 +49,26 @@ async def books(index: str) -> list[str] | None:
 @search_mcp.tool
 async def documents(item: schemas.SearchDocumentsPayload) -> dict | None:
     """
-    This tool help to find chucks in opensearch index by text query
+    Search relevant chunks/documents in one OpenSearch index by text query.
 
-    * **index** - your opensearch index
-    * **text** - query to search documents
-    * **top_k** - number of document to receive 
+    Use this tool when:
+    - you need semantic search without book-level filtering.
+
+    Args (item):
+    - index (str): exact OpenSearch index name, for example "dnd-index".
+    - text (str): natural language user query.
+    - top_k (int): number of results to return, must be >= 10.
+
+    Example call:
+    ```json
+    {
+      "item": {
+        "index": "dnd-index",
+        "text": "Find description of spells Poison Spray and Magic Hand",
+        "top_k": 10
+      }
+    }
+    ```
     """
     logger.success(
         f"Search documents tool used, index: {item.index} {item.text}")
@@ -62,13 +92,34 @@ async def documents(item: schemas.SearchDocumentsPayload) -> dict | None:
 @search_mcp.tool
 async def documents_with_filter(item: schemas.SearchFilterDocumentsPayload) -> dict | None:
     """
-    This tool help to find documents in opensearch index with advanced search methodics and filters
+    Search documents with semantic ranking and optional include/exclude book filters.
 
-    * **index** - your opensearch index
-    * **text** - query to search documents
-    * **top_k** - number of document to receive 
-    * **allowed_books** - list of full name of allowed books (you may find all books in awailiable_books tool)
-    * **forbidden_books** - list of full name of forbidden books or ban-books (you may find all books in awailiable_books tool)
+    Use this tool when:
+    - user asks to search only in specific books;
+    - user asks to exclude specific books from search.
+
+    Args (item):
+    - index (str): exact OpenSearch index name.
+    - text (str): natural language user query.
+    - top_k (int): number of results to return, must be >= 10.
+    - allowed_books (list[str]): only these books are used for search; [] disables include filter.
+    - forbidden_books (list[str]): these books are excluded; [] disables exclude filter.
+
+    Important:
+    - book names must match names from `books(index)` output exactly.
+
+    Example call:
+    ```json
+    {
+      "item": {
+        "index": "dnd-index",
+        "text": "Find all rules for concentration",
+        "top_k": 10,
+        "allowed_books": ["Player's Handbook"],
+        "forbidden_books": ["Unearthed Arcana"]
+      }
+    }
+    ```
     """
     logger.success(
         f"Search filter documents tool used, index: {item.index} {item.text}")
