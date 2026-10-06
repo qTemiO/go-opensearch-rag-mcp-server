@@ -1,233 +1,113 @@
 # go-opensearch-rag-mcp-server
 
-MCP-сервер на Python для работы с данными из `go-opensearch-database`.
+MCP-сервер (Python, FastMCP 4) для [GoOpenDB](../go-opensearch-database), хранилища документов
+и конфигурации `agent-constructor` на OpenSearch.
 
-Сервис объединяет несколько MCP-инструментов в одну точку входа и позволяет:
+Через сервер LLM-агенты могут:
 
-- получать текущее время;
-- искать документы и фрагменты текста в OpenSearch;
-- получать, записывать и удалять описания книг;
-- получать список доступных индексов;
-- создавать и обслуживать агентов, графы, узлы и ребра для агентных сценариев.
+- искать по RAG-индексам книг (гибридный поиск, реранкинг, фильтр по книгам);
+- вести описания книг и управлять корпусом (загрузка текста, переименование, удаление книг, создание индексов);
+- работать с generic-индексами JSON-документов (поиск, фильтры, CRUD);
+- собирать агентные графы: agents, nodes, edges, graphs, с валидацией по правилам agent-constructor;
+- читать и менять реестры MCP-серверов и LLM-провайдеров.
 
-## Что внутри
+## Префиксы инструментов = права доступа
 
-Основной сервер запускается из [`main.py`](/c:/Users/Undefined/Documents/GitHub/go-opensearch-rag-mcp-server/main.py) и подключает четыре под-сервера:
+`agent-constructor` выдаёт агенту инструменты по `mcp_permissions`. Это список **префиксов
+имён инструментов**, фильтр `tool.name.startswith(prefix)`. Поэтому имена инструментов
+являются публичным контрактом: существующие имена сохранены, новые разложены по префиксам
+так, чтобы старые права не получили неожиданного доступа на запись.
 
-- `search`:
-  поиск документов и список книг в индексе;
-- `descriptions`:
-  чтение и изменение описаний книг;
-- `resources`:
-  доступ к списку индексов.
-- `agents`:
-  CRUD для agents/nodes/edges/graphs и последовательное создание графов агентом.
+| Префикс | Доступ | Инструменты |
+| --- | --- | --- |
+| `search_` | только чтение | `search_list_indexes`, `search_books`, `search_documents`, `search_documents_with_filter` |
+| `descriptions_` | чтение/запись | `descriptions_get_all`, `descriptions_get_by_name`, `descriptions_write`, `descriptions_delete` |
+| `books_` | запись | `books_create_index`, `books_load_text`, `books_rename`, `books_delete` |
+| `documents_` | чтение/запись | `documents_search`, `documents_filter`, `documents_get`, `documents_create_index`, `documents_upsert`, `documents_patch`, `documents_delete` |
+| `agents_` | чтение/запись | CRUD `agents_{list,get,create,update,patch,delete}_{agent,node,edge,graph}`, `agents_get_full_graph`, `agents_get_resolved_agent`, `agents_validate_graph`, `agents_list/get_mcp_server(s)`, `agents_list/get_model_provider(s)` |
+| `registry_` | запись | `registry_{create,update,delete}_{mcp_server,model_provider}` |
+| — | чтение | `current_time` |
 
-Транспорт запуска: `streamable-http`.
+Примеры прав: `["search_"]` даёт весь поиск, `["search_documents"]` только два поисковых
+инструмента, `["descriptions_get"]` даёт описания только на чтение.
 
-По умолчанию сервис слушает `0.0.0.0:13005`.
+Ресурс `resource://indexes` отдаёт список RAG-индексов.
 
-## MCP-инструменты
+## Поведение инструментов
 
-### Основной сервер
-
-- `current_time() -> str`
-
-### `search`
-
-- `search_books(index: str)`  
-  Возвращает список книг, загруженных в указанный индекс.
-- `search_documents(item)`  
-  Ищет документы по текстовому запросу.
-- `search_documents_with_filter(item)`  
-  Ищет документы с дополнительной фильтрацией по разрешенным и запрещенным книгам.
-
-Фактические имена инструментов будут сформированы FastMCP с учетом префиксов, подключенных в [`main.py`](/c:/Users/Undefined/Documents/GitHub/go-opensearch-rag-mcp-server/main.py).
-
-### `descriptions`
-
-- `descriptions_get_all(index: str)`  
-  Возвращает все описания книг в индексе.
-- `descriptions_get_by_name(index: str, book_name: str)`  
-  Возвращает описание конкретной книги.
-- `descriptions_write(item)`  
-  Создает или обновляет описание книги.
-- `descriptions_delete(item)`  
-  Удаляет описание книги.
-
-### `resources`
-
-- `resources_indexes()`  
-  Возвращает список доступных индексов.
-
-Дополнительно сервер публикует ресурс `resource://indexes`.
-
-### `agents`
-
-CRUD-инструменты:
-
-- `agents_list_agents()`, `agents_get_agent(uuid)`, `agents_create_agent(item)`, `agents_update_agent(uuid, item)`, `agents_patch_agent(uuid, item)`, `agents_delete_agent(uuid)`
-- `agents_list_nodes()`, `agents_get_node(uuid)`, `agents_create_node(item)`, `agents_update_node(uuid, item)`, `agents_patch_node(uuid, item)`, `agents_delete_node(uuid)`
-- `agents_list_edges()`, `agents_get_edge(uuid)`, `agents_create_edge(item)`, `agents_update_edge(uuid, item)`, `agents_patch_edge(uuid, item)`, `agents_delete_edge(uuid)`
-- `agents_list_graphs()`, `agents_get_graph(uuid)`, `agents_get_full_graph(uuid)`, `agents_create_graph(item)`, `agents_update_graph(uuid, item)`, `agents_patch_graph(uuid, item)`, `agents_delete_graph(uuid)`
-
-Правила для LLM:
-
-- `agent_type`: только `orchestrator` или `agent`;
-- `model`: по умолчанию `openrouter::x-ai/grok-4.1-fast`;
-- `agents`: обычно оставлять `[]`;
-- `mcp_permissions`: router-сервисы `search`, `descriptions`, `agents`;
-- `resources` не использовать в `mcp_permissions`;
-- `node.type`: `INPUT` для входной ноды графа, обычно оркестратор; `CUSTOM` для промежуточной ноды; `OUTPUT` для финальной ноды;
-- для агентного графа обычно создается несколько agents: каждая роль графа получает свой agent, а node ссылается на него через `agent_id`;
-- граф создается только последовательными CRUD-вызовами: сначала `agents_create_agent`, затем `agents_create_node`, затем `agents_create_edge`, затем `agents_create_graph`;
-- перед созданием агент должен проверить существующие agents/nodes/edges/graphs через list tools и не создавать дубли;
-- если create возвращает только статус, id нужно получить через list tools: `agents_list_agents`, `agents_list_nodes`, `agents_list_edges`, `agents_list_graphs`;
-- для новых объектов используйте уникальные имена с коротким run id, чтобы надежно найти созданный объект в list results;
-- если list показывает уже существующий подходящий объект, агент может переиспользовать его вместо создания дубля;
-- если нужно понять устройство существующего графа, использовать `agents_get_full_graph(uuid)`.
-
-Упрощенный пример последовательного создания. Для реального агентного графа шаги `agents_create_agent` и `agents_create_node` повторяются для каждой роли графа.
-
-```text
-1. agents_create_agent({
-  "item": {
-    "name": "Rules Agent",
-    "agent_description": "Answers questions using RAG tools.",
-    "agent_type": "orchestrator",
-    "model": "openrouter::x-ai/grok-4.1-fast",
-    "system_prompt": "Use available MCP tools to answer accurately.",
-    "agents": [],
-    "mcp_permissions": ["search", "descriptions"]
-  }
-})
-
-2. agents_create_node({
-  "item": {
-    "agent_id": "<agent_id from step 1>",
-    "name": "Node Rules Orchestrator",
-    "description": "Use available MCP tools to answer accurately.",
-    "type": "INPUT"
-  }
-})
-
-3. agents_create_edge({
-  "item": {
-    "from": "<source_node_id>",
-    "to": "<target_node_id>",
-    "name": "RulesOrchestrator-Searcher"
-  }
-})
-
-4. agents_create_graph({
-  "item": {
-    "name": "RAG answer graph",
-    "description": "Minimal graph for answering with retrieved context.",
-    "nodes": [{"id": "<node_id>", "name": "Node Rules Orchestrator"}],
-    "edges": [{"id": "<edge_id>", "name": "RulesOrchestrator-Searcher"}]
-  }
-})
-```
-
-## Зависимости
-
-- Python `3.13`
-- Poetry
-- доступный HTTP API сервиса `go-opensearch-database`
-
-Основные библиотеки:
-
-- `fastmcp`
-- `aiohttp`
-- `loguru`
-- `fastapi`
+- **Плоские аргументы.** Аргументы передаются напрямую, без обёртки `{"item": {...}}`.
+- **Структурированный ответ.** У каждого инструмента есть `outputSchema`, и он возвращает `structuredContent` (плюс тот же JSON текстом).
+- **Ошибки.** Ошибки возвращаются как `isError` с понятным текстом и следующим шагом (`"No agent with id 'x'. Use agents_list_agents to find valid ids."`). Тело ошибки GoOpenDB никогда не отдаётся модели под видом данных.
+- **Create возвращает id.** GoOpenDB отвечает на create просто `"Written successfully"`, поэтому сервер находит новый объект сам и возвращает его целиком.
+- **Проверка ссылок до записи.** Неизвестные книги, `agent_id`, node ids, `mcp_server_ids`, `model_provider_id` и модель вне `available_models` отклоняются до записи, со списком допустимых значений.
+- **Защита от поломки графов.** Удаление agent/node/edge, на которые ещё ссылаются, требует `force=true`.
+- **Пагинация.** `agents_list_*` поддерживают `limit`/`offset`/`name_contains` и не отдают системные промпты в списках.
+- **`descriptions_write` — upsert.** API GoOpenDB добавляет дубль при каждом вызове, сервер заменяет существующее описание.
+- **Аннотации.** У всех инструментов есть `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`.
 
 ## Конфигурация
 
-Настройки описаны в [`settings.py`](/c:/Users/Undefined/Documents/GitHub/go-opensearch-rag-mcp-server/settings.py).
+Переменные окружения или файл `.env` / `.env.production` в корне (пример: [`.env.dev`](.env.dev)):
 
-Важно: сейчас `BaseSettings` по умолчанию читает файл `.env.production`.
+| Переменная | По умолчанию | Описание |
+| --- | --- | --- |
+| `GO_OPENSEARCH_DATABASE_URL` | обязательна | Базовый URL GoOpenDB |
+| `HOST` / `PORT` / `MCP_PATH` | `0.0.0.0` / `13005` / `/mcp` | Адрес MCP-эндпоинта |
+| `STATELESS_HTTP` | `true` | Stateless streamable HTTP, без sticky-сессий |
+| `JSON_RESPONSE` | `true` | JSON-ответы вместо SSE-потока |
+| `REQUEST_TIMEOUT_SECONDS` | `60` | Таймаут запросов к GoOpenDB |
+| `TIMEZONE` | пусто | IANA-зона для `current_time` |
+| `LOG_LEVEL` | `INFO` | Уровень логов |
 
-Для локального запуска нужно либо:
-
-1. заполнить `.env.production`,
-2. либо изменить `env_file` в `settings.py`,
-3. либо передать переменные окружения напрямую через среду выполнения.
-
-Минимально необходимые переменные:
-
-```env
-HOST=0.0.0.0
-PORT=13005
-GO_OPENSEARCH_DATABASE_URL=http://localhost:8000
-```
-
-Также в настройках есть переменные для интеграционных тестов:
-
-```env
-TEST_PROVIDER_BASE_URL=
-TEST_API_KEY=
-TEST_MODEL_NAME=
-TEST_MCP_URL=http://localhost:13005/mcp
-```
-
-## Установка и запуск
-
-### Через Poetry
+## Запуск
 
 ```bash
 poetry install
-poetry run python main.py
+poetry run python main.py        # http://localhost:13005/mcp
 ```
 
-После запуска MCP-сервер будет доступен по адресу:
-
-```text
-http://localhost:13005/mcp
-```
-
-### Через Docker
+Docker:
 
 ```bash
 docker build -t go-opensearch-rag-mcp-server .
-docker run --rm -p 13005:13005 --env-file .env.production go-opensearch-rag-mcp-server
+docker run --rm -p 13005:13005 -e GO_OPENSEARCH_DATABASE_URL=http://go-opensearch-database:8000 go-opensearch-rag-mcp-server
 ```
 
-## Примеры сценариев использования
-
-- получить список книг из индекса OpenSearch;
-- найти релевантные фрагменты по пользовательскому запросу;
-- ограничить поиск конкретными книгами;
-- сохранить краткое описание книги для дальнейшего использования агентом;
-- получить список индексов, доступных в базе.
+Отладка через MCP Inspector: `npx @modelcontextprotocol/inspector` → Streamable HTTP → `http://localhost:13005/mcp`.
 
 ## Тесты
-
-В репозитории есть интеграционные тесты в [`servers/search/tool_test.py`](/c:/Users/Undefined/Documents/GitHub/go-opensearch-rag-mcp-server/servers/search/tool_test.py).
-
-Для запуска тестов нужны:
-
-- запущенный MCP-сервер;
-- доступ к LLM-провайдеру;
-- заполненные `TEST_*` переменные окружения.
-
-Команда запуска:
 
 ```bash
 poetry run pytest
 ```
 
-## Структура проекта
+Тесты не требуют ни GoOpenDB, ни LLM: GoOpenDB подменяется in-memory фейком
+([`tests/fake_goopendb.py`](tests/fake_goopendb.py)). Отдельный тест фиксирует контракт
+имён инструментов и проверяет, что всё под префиксом `search` доступно только на чтение.
+
+Оценочные вопросы для проверки, насколько хорошо LLM справляется с сервером:
+[`evaluations/goopendb_eval.xml`](evaluations/goopendb_eval.xml)
+(формат скилла `mcp-builder`, только операции чтения).
+
+## Структура
 
 ```text
-.
-|-- main.py
-|-- settings.py
-|-- servers/
-|   |-- search/
-|   |-- descriptions/
-|   |-- resourсes/
-|   `-- agents/
-|-- Dockerfile
-`-- pyproject.toml
+main.py                     точка входа
+goopendb_mcp/
+  app.py                    экземпляр FastMCP и instructions
+  server.py                 запуск транспорта
+  settings.py               конфигурация
+  client.py                 HTTP-клиент GoOpenDB и обработка ошибок
+  common.py                 аннотации, пагинация, общие типы аргументов
+  tools/
+    search.py               search_*
+    descriptions.py         descriptions_*
+    books.py                books_*
+    documents.py            documents_*
+    agents.py               agents_* (agents, чтение реестров)
+    graphs.py               agents_* (nodes, edges, graphs, валидация)
+    registry.py             registry_*
+    system.py               current_time
+    _store.py               общий CRUD и получение id после create
+tests/
 ```

@@ -8,28 +8,45 @@ Blueprint для агентного графа, который автомати�
 
 Оркестратор всегда является входной нодой графа. Рабочие ноды не пишут граф напрямую, кроме отдельной ноды Graph Writer. Перед записью структура обязательно проходит validation.
 
+> **Актуализация под MCP-сервер v0.2.** Промпты ниже писались под старый сервер и
+> местами описывают его ограничения. Где они расходятся с правилами этого раздела,
+> правильный вариант здесь:
+>
+> - create-инструменты **возвращают созданный объект с id**, отдельный discovery через list после create больше не нужен;
+> - модель выбирается через `model_provider_id` (+ `model_name_override`) из `agents_list_model_providers`, а не через захардкоженную строку `model`;
+> - `mcp_permissions` — это **префиксы имён инструментов**, а не фиксированный список из трёх значений;
+> - после сборки графа нужно вызывать `agents_validate_graph`.
+
 ## Router Permissions
 
-Допустимые значения `mcp_permissions`:
+`mcp_permissions` — список **префиксов имён инструментов**: agent-constructor пропускает
+инструмент к агенту, если `tool.name.startswith(prefix)` хотя бы для одного префикса.
+Инструменты собираются со всех серверов из `mcp_server_ids` агента.
 
-- `search`: поиск книг, документов и RAG-инструменты.
-- `descriptions`: работа с описаниями книг.
-- `agents`: работа с agents/nodes/edges/graphs и создание графов.
+Префиксы этого сервера:
 
-Не использовать `resources` в `mcp_permissions`. Это отдельный MCP prefix в сервере, но не permission для агентных графов.
+- `search_`: только чтение. Индексы, книги, RAG-поиск. Можно сузить: `search_documents`.
+- `descriptions_`: описания книг (`descriptions_get` — только чтение).
+- `books_`: управление корпусом (загрузка, переименование, удаление книг).
+- `documents_`: generic JSON-документы.
+- `agents_`: agents/nodes/edges/graphs и чтение реестров MCP-серверов и провайдеров.
+- `registry_`: запись в реестры. Обычным агентам не выдавать.
+
+Пустой `mcp_permissions` означает, что у агента нет инструментов совсем.
 
 Общие правила:
 
 - `agent_type`: только `orchestrator` или `agent`.
-- `model`: по умолчанию `openrouter::x-ai/grok-4.1-fast`.
+- Модель: `model_provider_id` из `agents_list_model_providers`, опционально `model_name_override` из `available_models` провайдера. Legacy-строка `model` (`openrouter::...`) нужна, только если провайдера нет.
+- Инструменты: `mcp_server_ids` из `agents_list_mcp_servers` плюс `mcp_permissions`.
 - `agents`: всегда `[]`.
 - Для агентного графа создавать несколько agents: каждая смысловая роль графа должна быть отдельным agent.
 - Обычно одна node представляет одного agent и использует его `agent_id`.
-- Create tools могут вернуть только статус вроде `written successfully`, без id.
-- Id не выдумывать. Id нужно получать через list/get discovery после create.
-- До записи edges должны ссылаться на node aliases, а после discovery nodes Graph Writer заменяет aliases на реальные node ids.
-- Для новых объектов использовать уникальные имена с коротким `run_id`, чтобы их можно было надежно найти в списках.
-- Если discovery находит уже существующий подходящий объект, его можно переиспользовать вместо создания дубля.
+- `agents_create_*` возвращают созданный объект вместе с id. Id не выдумывать, брать из ответа create.
+- Edges создаются после nodes и ссылаются на реальные node ids из ответов `agents_create_node`.
+- `agents_create_graph` принимает `node_ids` и `edge_ids`, имена ссылок сервер подставляет сам.
+- В конце вызвать `agents_validate_graph(uuid)`; при `valid: false` исправить ошибки из `errors`.
+- Перед созданием проверить существующие объекты (`agents_list_*` с `name_contains`) и переиспользовать подходящие вместо дублей.
 
 ## Recommended Graph Structure
 

@@ -1,5 +1,10 @@
-.env.production
-__pycache__
+.env
+.env.*
+.git
+.github
+.agents
 .vscode
 .pytest_cache
+__pycache__
+tests
 *.tar.gz

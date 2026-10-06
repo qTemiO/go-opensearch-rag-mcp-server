@@ -1,0 +1,48 @@
+<!--
+  Evaluation set for goopendb_mcp (mcp-builder skill format). Every question needs
+  only read-only tools. Answers were verified against GoOpenDB on 2026-10-06.
+  Questions 1-5 rely on the book corpus (stable); 6-10 rely on agent-constructor
+  configuration and must be re-verified if those graphs are edited.
+-->
+<evaluation>
+  <qa_pair>
+    <question>In the D&amp;D index, the 2024 spell list describes the cantrip "Ядовитые брызги" (Poison Spray). How much poison damage does it deal on a hit when the caster has reached 11th level? Answer in the book's dice notation.</question>
+    <answer>3к12</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>The Dark Souls index splits each DLC into topic books. How many books in that index belong to the "Ashes of Ariandel" DLC?</question>
+    <answer>8</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>RimWorld index book names start with the game edition or DLC they cover. Which prefix has the largest number of books?</question>
+    <answer>Vanilla</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the Warhammer index there is a book about the primarch Angron, "slave of Nuceria". According to that book, what is the number (in Roman numerals) of the legion whose ships searched for him?</question>
+    <answer>XII</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the Warcraft novel about Arthas' rise to become the Lich King, what is the name of Arthas' white horse (in Russian, nominative case)?</question>
+    <answer>Непобедимый</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>The graph "RW::Search" contains one agent that is connected to an MCP server but cannot call any tool because of its permissions. What is that agent's name?</question>
+    <answer>General::Math</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>How many nodes of type CUSTOM does the graph "DnD::NpcCreator" have?</question>
+    <answer>19</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which LLM model will agent-constructor actually use for the agent behind the INPUT node of the graph "WH::Search"? Give the model name exactly as the provider lists it.</question>
+    <answer>openai/gpt-6-luna-pro</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the graph "LSS::CharacterCreator", exactly one agent is connected to two MCP servers. What is the registered name of the server that is not the RAG server?</question>
+    <answer>MCP Математика</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the name of the OUTPUT node of the graph "RW::Search"?</question>
+    <answer>Graph::RW::Worker::Finalizer</answer>
+  </qa_pair>
+</evaluation>
